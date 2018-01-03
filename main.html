@@ -1,0 +1,317 @@
+<!doctype html>
+<html>
+<head>
+	<title>Twitter Sea</title>
+<script src="jquery-2.1.0.js"></script>
+<script src="jqcloud.min.js"></script>
+<link rel="stylesheet" href="jqcloud.min.css">
+<script type="text/javascript">
+var jsonarray=[]; //a list to store json data structures
+var wordCloud=""; //a variable to store the current searched word cloud
+var nextpic=0; //indexing variable 
+var date; //store date of creation of current searched word cloud
+var dates; //store list of dates of the word clouds in database
+var cloudbank = []; 
+var indexrange = [-2,2]; //represent current window of cached tweets 
+var numberOfClouds;
+/**
+Retrieve the next batch of word clouds within indexrange in database and store it on cloudbank.
+
+**/
+
+function HelperOfLoadCloud() {
+	$.ajax({url:"loadClouds.php", 
+		method: "GET",
+		async:false,
+		data: {"index": nextpic}})
+		
+
+		.done(function(resp) { 
+			
+			if (resp == "none") {
+				nextpic--;
+				return; 
+			}
+			
+			cloudbank=resp; //resp is an json structure of word clouds and meta data about the word clouds
+			
+			numberOfClouds=JSON.parse(cloudbank)[3];
+
+		});
+	
+}
+/**
+	Do the neccessary steps to load a cloud indexed by next onto the public wall for user to view. 
+**/
+function loadCloud(next) { 
+	if (next <0 ) {
+		nextpic++;
+		return;
+	}
+	if (next < indexrange[0] || next>indexrange[1]) {
+		//indexOfCloud refers to the index in cloudbank of the cloud that is referred to by variable next. 
+		//since cloudbank is a batch of 5 clouds, it is possible that next is 10 but within cloudbank, the 10th cloud 
+		//on display is the 3rd cloud in the array cloud bank.  
+		HelperOfLoadCloud();
+		indexrange=[next-2, next+2];
+		
+		if (numberOfClouds==5) { //considerinng different cases 
+			//for what indexOfCloud could be. 
+			indexOfCloud = 2;
+				
+		}
+		else if (numberOfClouds==4 && next == 1) {
+			indexOfCloud = 1;
+				
+		}
+		else if (numberOfClouds==4 && next != 1) {
+			indexOfCloud = 2;
+				
+		}
+		else if (numberOfClouds==3 && next ==0) {
+			indexOfCloud =0;
+		}
+		else {
+			indexOfCloud = 2;
+		}
+			
+	}
+	else {
+		
+		midpt = (indexrange[0]+indexrange[1])/2
+		if (numberOfClouds==5) {//considerinng different cases 
+			//for what indexOfCloud could be.
+			indexOfCloud = next - midpt + 2;
+				
+		}
+		else if (numberOfClouds==4 && midpt==1) {
+			indexOfCloud = next;
+				
+		}
+		else if (numberOfClouds==4) {
+			indexOfCloud = next-midpt+2;
+				
+		}
+		else if (numberOfClouds==3 && midpt ==0) {
+			indexOfCloud =next-midpt;
+
+		}
+		else if (numberOfClouds==3) {
+			indexOfCloud= next-midpt+2;
+		}
+
+		else if (numberOfClouds==2){
+			if (next-midpt<0) {
+				indexOfCloud=0;
+			}
+			else if (next-midpt>0){
+				indexOfCloud=next-midpt;
+			}
+			else {
+				indexOfCloud=midpt;
+			}
+		}
+		else {
+			indexOfCloud=midpt;
+		}	
+	}
+		
+		
+		clouds = JSON.parse(JSON.parse(cloudbank)[0]);
+		dates  = JSON.parse(JSON.parse(cloudbank)[2]);
+		jsonarray = [];
+		
+			
+			
+
+		if (indexOfCloud in clouds) {	
+			cloud=JSON.parse(clouds[indexOfCloud]);
+		}
+		else {
+			nextpic--;
+			HelperOfLoadCloud();			
+			indexrange = [nextpic-2, nextpic+2];
+			return;
+		}
+		j=0;
+		for (var word in cloud) {
+			jsonarray[j]={text:word, weight:cloud[word]}; //build a list of json structures
+				//where text contains a word in the wordcloud and the weight is the number of 
+				//times the word occurs when searching on twitter. We do this so that the format would match the format 
+				//required by jQCloud service. 
+			j++;
+				
+		}
+			
+		$("#cloud").jQCloud('destroy'); //empty the frame first
+		$("#cloud").jQCloud(jsonarray); //load it up with the cloud.  
+		$("#date").html("Date of tweets: " + dates[indexOfCloud]);
+		jsonarray=[]; //empty for future use
+		return; //done so escape. 
+			
+}
+
+/**
+Increment the like counter for the word cloud indexed by nextpic.  
+
+**/
+function incrementLike(nextpic) {	
+	$.post("addLike.php", {"nextpic":nextpic}, function(resp) {
+		if (resp!="") {
+			$("#likestatus").html(resp);
+		}
+
+	});
+}
+
+/**
+
+Put the word cloud on display into the public database for other users to view in future.  
+
+**/
+function saveCloud(wordCloud) {
+	if (wordCloud != "") {
+		
+	$.post("saveCloud.php", {"tosave":wordCloud, "date":date}, function(resp){
+		if (resp != "ok") {
+			$("#test").html(resp);
+		}
+		else {
+			$("#test").html("saved successfully");
+			
+			HelperOfLoadCloud()
+			if (nextpic==0) {
+				loadCloud(nextpic);
+			}
+
+		}
+
+	});}
+
+}
+
+/**
+	Look up on twitter for tweets with the given words, and then create a word cloud 
+	based on the search results.
+
+**/
+function search(keyword) {
+	$.get("searchtwitter.php", {"search":keyword}, function(resp) {
+		$("#test").html("");
+		if (resp=="account does not exist or error") {
+			$("#test").html("account does not exist or error");
+			wordCloud="";
+		}
+		
+		else {
+			cloud = JSON.parse(resp); 
+		
+			i=0;
+			for (var cloudId in cloud) { //iterating through the words 
+
+				// use jsonarray to construct 
+				jsonarray[i]={text:cloudId, weight:cloud[cloudId]};
+				i++;
+			}
+			
+				$("#test").jQCloud('destroy');
+				$("#test").jQCloud(jsonarray);
+			jsonarray=[]; //empty for future use
+			wordCloud=resp; 
+			rawdate = new Date();
+			date = rawdate.toString();
+			}
+			
+				
+	}
+
+
+		)
+}
+
+/**
+	Check if person who tries to access main.html is authenticated and thus has permission. 
+	If not, then redirect him to another page that says he does not have permission. 
+**/
+function checkperm() {
+	$.get("checkperm.php", function(resp) {
+		
+		if (resp !="yes") {
+			
+			location.replace("block.html");
+			
+		}
+		
+	})
+}
+
+$(function(){
+	$.get("loadProfilePic.php", function(resp) {
+      document.getElementById("profilePic").src=resp;
+	});
+
+	checkperm();
+
+	HelperOfLoadCloud();
+	loadCloud(nextpic);
+	
+	$("#send").click(function() {
+		search($("#search").val());
+
+
+	});
+	$("#save").click(function(){
+
+		saveCloud(wordCloud);
+	});
+	$("#nextcloud").click(function(){
+		nextpic++;
+		loadCloud(nextpic);
+		
+
+	})
+	$("#prevcloud").click(function(){
+		if (nextpic >0){
+		nextpic--;
+		loadCloud(nextpic);}
+		
+	});
+	$("#like").click(function(){
+		incrementLike(nextpic);
+
+	});
+	$("#logout").click(function() {
+		$.get("logout.php", function() {
+			location.replace("welcome.html");
+		})
+	})
+	
+
+
+})
+
+</script>
+</head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<body id="body"><h1>Welcome to the Twitter Sea</h1>
+<a name="top"></a>
+<form>
+<input id="search"type="text" name="search">
+<input id="send"type="button" value="search">
+<input id="logout"type="button" value="log out">
+<a href="editProfile.html" >Edit your profile</a>
+</form>
+<a href="#public displays">public displays</a>
+<img id = "profilePic" style="top:0;right:0; position:fixed;" src="">
+<div style="width:70%; height:850px;font-size: 10px;border:2px solid black;"id="test"></div>
+<button id="save">share</button>
+<a name="public displays"></a>
+<a href="#top">Back to top</a>
+<div style="width:70%; height:850px;font-size: 10px;border:2px solid black;"id="cloud"></div>
+<button id="prevcloud">back</button> 
+<button id="nextcloud">next</button>
+<button id="like">Like</button>
+<div id="date"></div>
+<div id="likestatus"></div>
+</body>
+</html>

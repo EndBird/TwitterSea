@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Edit your profile</title>
+<script src="jquery-2.1.0.js"></script>
+</head>
+<body>
+
+
+Enter your new username: <input id="newUsername" type="text">
+Retype your new username: <input id="newUsername2" type="text" onkeyup="checkUsername($('#newUsername').val(), this.value)">
+<div id="check"></div><br>
+
+Enter your new password: <input type="password" id="newPass" >
+Retype your new password: <input type="password" id="newPass2"  onkeyup="checkPass($('#newPass').val(), this.value)">
+<div id="check1"></div><br>
+
+Change profile picture: <button type="button" onclick = "showFileUploader()">Upload an Image file</button> or <button type="button" onclick="showUrlHolder()">Upload an Image URL</button><br>
+  <input   style = "visibility:hidden;" type ="file" id="file" name="files[]" accept="image/*" onchange = "checkImgSize()"><br>
+  <input style="visibility:hidden;" id="url" type="text">
+<div id="check2"></div>
+<h6 style = "visibility:hidden;" id="imgPrevHeader">Image Preview</h6>
+<img style = "visibility:hidden;" id="imgPrev" src="">
+<br>
+<button onclick = "changeAccount( $('#newUsername').val(), $('#newUsername2').val(), $('#newPass').val(), $('#newPass2').val(), 
+$('#url').val()); addImg();"id="change">Change profile</button>
+
+</body>
+<script>
+var file = "";
+var url="";
+function checkUsername(username, reEntered) {
+	if (username!=reEntered) {
+       $("#check").html("username not the same.")
+	}
+	else {
+       $("#check").html("A match.")
+
+	}
+	return username==reEntered && username && reEntered;
+}
+
+function checkPass(pass, reEntered) {
+	if (pass!=reEntered) {
+       $("#check1").html("Password not the same.")
+	}
+	else {
+       $("#check1").html("A match.")
+	}
+	return pass==reEntered && pass && reEntered;
+}
+function changeAccount(newUsername, newUsername2, newPass, newPass2, url) {
+    if (checkUsername(newUsername, newUsername2) || checkPass(newPass, newPass2)) {
+        $.post("changeAccount.php", { "newUsername":newUsername, "newPass":newPass}, function(resp) {
+           if (resp=="Account changed successfully") {
+           	$("#check1").html(resp);
+           }
+           else {
+           	$("#check1").html("Sorry, we failed to change your account details. Please try again later.");
+           }
+           
+
+        })
+       
+
+    }
+
+    else if (url==false){
+    	 $("#check1").html("You need to fill in at least one section correctly.")
+    	 $("#check").html("")
+    	 document.getElementById("check1").style.color = "red";
+    }
+    if (url) {
+       $.post("storeImg.php", {"url":url}, function(resp) {
+          $("#check1").html(resp);
+
+          })
+    }
+}
+function checkImgSize() {
+  file = document.getElementById("file").files[0];
+  if (file.size >= 50000) {
+    document.getElementById("check2").style.color = "red";
+    $("#check2").html("Image must be fewer than 50 KB in size.");
+    file = ""
+  }
+  else {
+     previewImg();
+  }
+  
+
+}
+function previewImg() {
+  var reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = function(r) {
+  document.getElementById("imgPrevHeader").style.visibility="visible";
+  document.getElementById("imgPrev").style.visibility="visible";
+  document.getElementById("imgPrev").src = r.target.result;
+  url = r.target.result;
+  }
+}
+function showFileUploader() {
+      //document.getElementById("file").style.visibility="visible";
+      //document.cookie = "showFile=True";
+      //document.cookie = "showUrlHolder=;expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+   document.getElementById("file").style.visibility="visible";
+   document.getElementById("url").style.visibility="hidden";
+}
+  
+function showUrlHolder() {
+  //document.cookie = "showUrlHolder=True;";
+  //document.cookie = "showFile=;expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+  document.getElementById("imgPrevHeader").style.visibility="hidden";
+  document.getElementById("imgPrev").style.visibility="hidden";
+  document.getElementById("file").style.visibility="hidden";
+  
+  document.getElementById("url").style.visibility="visible";
+    
+
+}
+function addImg() {
+  if (file) {
+    $.post("storeImg.php", {"url":url}, function(resp) {
+      $("#check2").html(resp);
+
+    })
+  }
+  url = "";
+  file= "";
+
+}
+
+
+</script>
+</html>

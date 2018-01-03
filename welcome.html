@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head><title>TwitterPirates</title>
+<script src="jquery-2.1.0.js"></script>
+<script>
+	function verify(username,psswd){
+
+		$.get("piratelogin.php",{"username":username, "psswd":psswd},function(resp){
+			if (resp=="not valid") {
+				//$("#status").html(resp);
+				alert("not valid");
+			}
+			else {
+				$("#status").html("");
+				location.replace("main.html");
+			}
+		
+		});
+
+	}
+	$(function(){
+		$("#login").click(function() {
+			verify($("#username").val(),$("#psswd").val());
+		});
+
+
+	});
+
+</script>
+</head>
+<body>
+<img width="50" height="50" src="whitebeard.jpg">
+<h1 style="display:inline; color:Aqua;" >TwitterPirates</h1>
+<form style="float:right;">
+  Username: <input id="username"type="text" name="name">
+  Password: <input id="psswd" type="password" name="password">
+  <input id="login"type="button" value="log in">
+  <a href="SignUp.html">Sign Up</a>
+</form>
+<div style="float:right;"id="status"></div>
+<p style="color:orange;">A community of mischiveous spirits roaming the sea of tweets looking for data</p>
+</body>
+
+
+</html>
