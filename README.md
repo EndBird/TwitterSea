@@ -12,7 +12,7 @@
 
 ## The Interface
 
-	The interface of the application consists of the welcome page, the sign up page, edit profile page, and the service app page. The welcome page is the first page everyone would see when visiting -- the introduction page -- which is the welcome.html file .  From here you can go to the sign up page or use the log in bar of the welcome page and head straight to the service app page. The sign up page lets visitors make new accounts, and is the SignUp.html file.  The service app page is the service provided to those who sign up for an account, which is the main.html file. From main.html, you can edit your profile, change username, account, etc.. through clicking 'edit your profile', which leads you to editProfile.html.
+The interface of the application consists of the welcome page, the sign up page, edit profile page, and the service app page. The welcome page is the first page everyone would see when visiting -- the introduction page -- which is the welcome.html file .  From here you can go to the sign up page or use the log in bar of the welcome page and head straight to the service app page. The sign up page lets visitors make new accounts, and is the SignUp.html file.  The service app page is the service provided to those who sign up for an account, which is the main.html file. From main.html, you can edit your profile, change username, account, etc.. through clicking 'edit your profile', which leads you to editProfile.html.
 
 ## How the app works internally
 
