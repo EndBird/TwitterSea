@@ -1,5 +1,5 @@
 #EndBird's Twitter Explorer Application
-Note: make sure to create Database to get the app working.  It uses postgresql database. check out launchDB.ddl.
+
 ##Purpose of this Application
 * Learn to utilize PHP, javascript, and html together.  
 * To get hands-on experience creating a psql database, accessing and manipulating its data using SQL through PHP.
